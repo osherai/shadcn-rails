@@ -5,12 +5,22 @@ within this application. The gem provides generators that will setup your applic
 possible without potentially overwriting any existing code as well as copy components and their
 dependencies to your application.
 
+These instructions target the `jaimico159/shadcn-rails` fork (branch
+`jaimico159-update-to-rails8-and-tailwindcss4`), which updates the original project for Rails 8 and
+Tailwind CSS v4.
+
 ## Add the Gem
 
-First step is adding the gem to your gemfile.
+Because this fork lives at `jaimico159/shadcn-rails`, you need to reference the Git branch directly
+for now. Add the following line to your application's `Gemfile`:
+
+```ruby
+gem "shadcn-ui", github: "jaimico159/shadcn-rails", branch: "jaimico159-update-to-rails8-and-tailwindcss4"
+```
+
+Then install the dependencies:
 
 ```sh
-bundle add shadcn-ui
 bundle install
 ```
 
@@ -39,16 +49,25 @@ The components need a few things in order to render and function properly
 
 Animation utilities used by the components ship with the gem, so no additional animation plugin is required when using Tailwind CSS v4.
 
+### Run the shadcn generator once
+
+Install at least one component to let the generator wire up shared assets. Pick any component you
+plan to use and run:
+
+```sh
+bin/rails generate shadcn-ui button
+```
+
+The first run copies the shared styles (`app/assets/stylesheets/shadcn.css`), drops the
+`config/shadcn.tailwind.*` preset that matches your Tailwind config, and injects the required import
+into the detected Tailwind entrypoint.
+
 ### shadcn CSS - Required
 
 #### shadcn.css
 
-These steps were not automated and are required to be done manually.
-
-The components also require a few CSS variables to be set in order to render properly. It's a two
-step process, first, the gem installation should have added `app/assets/stylesheets/shadcn.css` to
-your application. You need to make sure this is imported by your Tailwind entrypoint (for example
-`app/assets/tailwind/application.css`), which should have happened automatically, but double check.
+The `shadcn.css` file contains the design tokens the components rely on. Double-check that your
+Tailwind entrypoint (for example `app/assets/tailwind/application.css`) imports it:
 
 ```
 @config "../../../config/tailwind.config.js";
@@ -137,9 +156,21 @@ export default {
 };
 ```
 
-After that feel free to add further customizatios to your tailwind config. For an existing tailwind
-config, just add shadcnConfig to the end of the config object. It will override any settings needed
-by being at the end. And obviously feel free to inspect shadcnConfig and keep only what's reui
+After that feel free to add further customizations to your Tailwind config. For an existing config,
+spread `shadcnConfig` at the end of the exported object so its overrides win, then cull anything you
+do not need.
+
+### Build the Tailwind output
+
+Propshaft serves the compiled CSS from `app/assets/builds/tailwind.css`. Generate it once to confirm
+everything is wired up:
+
+```sh
+bin/rails tailwindcss:build
+```
+
+If you keep the Tailwind watch process running (via `bin/dev` or `bin/rails tailwindcss:watch`), the
+build output will stay in sync automatically.
 
 ## End
 
@@ -153,8 +184,9 @@ Prior to the initial gem release, you can use this as an alpha by cloning this r
 starting up the app as you would a standard rails app.
 
 ```sh
-git clone https://github.com/aviflombaum/shadcn-rails.git
+git clone https://github.com/jaimico159/shadcn-rails.git
 cd shadcn-rails
+git checkout jaimico159-update-to-rails8-and-tailwindcss4
 bundle install
 ./bin/dev
 ```
@@ -183,8 +215,6 @@ to your `Gemfile` and install tailwind into your app:
 ./bin/bundle add tailwindcss-rails
 ./bin/rails tailwindcss:install
 ```
-
-Then install ./bin/rails tailwindcss:install
 
 ### Configure tailwind.config.js
 
