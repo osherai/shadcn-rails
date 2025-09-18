@@ -121,7 +121,7 @@ class ShadcnUiGenerator < Rails::Generators::Base
 
     abort <<~MSG
       shadcn-ui requires Tailwind CSS. Please include tailwindcss-rails in your Gemfile and run `rails tailwindcss:install` to install Tailwind CSS.
-      This generator looks for an application stylesheet that includes Tailwind directives. Supported locations include app/assets/stylesheets and app/frontend/stylesheets.
+      This generator looks for an application stylesheet that includes Tailwind directives. Supported locations include app/assets/tailwind, app/assets/stylesheets, and app/frontend/stylesheets.
     MSG
   end
 
@@ -147,7 +147,7 @@ class ShadcnUiGenerator < Rails::Generators::Base
     return if matched_file
 
     puts "Importing shadcn.css into #{relative_tailwind_entrypoint}..."
-    insert_import_first_line(tailwind_file_path, "@import \"shadcn.css\";")
+    insert_import_first_line(tailwind_file_path, shadcn_import_statement(tailwind_file_path))
   end
 
   def insert_import_line(file_path, line)
@@ -232,7 +232,7 @@ class ShadcnUiGenerator < Rails::Generators::Base
   end
 
   def relative_tailwind_entrypoint
-    tailwind_entrypoint_relative_path || "application.tailwind.css"
+    tailwind_entrypoint_relative_path || "app/assets/tailwind/application.css"
   end
 
   def tailwind_entrypoint_relative_path
@@ -247,6 +247,7 @@ class ShadcnUiGenerator < Rails::Generators::Base
 
   def tailwind_entrypoint_candidates
     %w[
+      app/assets/tailwind/application.css
       app/assets/stylesheets/application.tailwind.css
       app/assets/stylesheets/application.css
       app/assets/stylesheets/application.pcss
@@ -254,6 +255,15 @@ class ShadcnUiGenerator < Rails::Generators::Base
       app/frontend/stylesheets/application.tailwind.css
       app/frontend/stylesheets/application.css
     ]
+  end
+
+  def shadcn_import_statement(tailwind_file_path)
+    shadcn_absolute_path = File.expand_path(File.join(target_rails_root, "app/assets/stylesheets/shadcn.css"))
+    tailwind_directory = Pathname.new(File.dirname(tailwind_file_path))
+    relative_path = Pathname.new(shadcn_absolute_path).relative_path_from(tailwind_directory)
+    "@import \"#{relative_path}\";"
+  rescue StandardError
+    "@import \"shadcn.css\";"
   end
 
   def discover_tailwind_entrypoint

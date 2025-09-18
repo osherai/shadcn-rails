@@ -1,8 +1,12 @@
-@import "shadcn.css";
+@config "../../../config/tailwind.config.js";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@source "tailwindcss/utilities";
+
+@import "../stylesheets/shadcn.css";
 
 @layer base {
   .container {

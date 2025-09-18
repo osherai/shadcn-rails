@@ -48,14 +48,19 @@ These steps were not automated and are required to be done manually.
 The components also require a few CSS variables to be set in order to render properly. It's a two
 step process, first, the gem installation should have added `app/assets/stylesheets/shadcn.css` to
 your application. You need to make sure this is imported by your Tailwind entrypoint (for example
-`application.tailwind.css`), which should have happened automatically, but double check.
+`app/assets/tailwind/application.css`), which should have happened automatically, but double check.
 
 ```
-@import "shadcn.css";
+@config "../../../config/tailwind.config.js";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import "../stylesheets/shadcn.css";
 ```
+
+Adjust the relative paths in the snippet above if your entrypoint lives somewhere other than
+`app/assets/tailwind`.
 
 #### shadcn.tailwind configuration
 
@@ -275,7 +280,7 @@ module.exports = {
 
 ### Configure styles
 
-Add the following to your Tailwind entrypoint (for example `app/assets/stylesheets/application.tailwind.css` or `app/frontend/stylesheets/application.css`).
+Add the following to your Tailwind entrypoint (for example `app/assets/tailwind/application.css`, `app/assets/stylesheets/application.tailwind.css`, or `app/frontend/stylesheets/application.css`).
 
 ```css
 @tailwind base;

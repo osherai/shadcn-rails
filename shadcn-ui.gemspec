@@ -11,13 +11,13 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://shadcn.rails-components.com"
   spec.summary = "Provides the shadcn-ui component library to a Ruby on Rails application."
   spec.description = "This gem is a documentation site and gem that will copy components from the shadcn-ui library into a Ruby on Rails application."
-  spec.homepage = "https://github.com/aviflombaum/shadcn-rails"
+  spec.homepage = "https://github.com/jaimico159/shadcn-rails/tree/jaimico159-update-to-rails8-and-tailwindcss4"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/aviflombaum/shadcn-rails"
-  spec.metadata["changelog_uri"] = "https://github.com/aviflombaum/shadcn-rails/tree/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/jaimico159/shadcn-rails/tree/jaimico159-update-to-rails8-and-tailwindcss4"
+  spec.metadata["changelog_uri"] = "https://github.com/jaimico159/shadcn-rails/blob/jaimico159-update-to-rails8-and-tailwindcss4/CHANGELOG.md"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
