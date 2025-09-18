@@ -12,6 +12,8 @@ RSpec.describe ShadcnUiGenerator, type: :generator do
     FileUtils.mkdir_p("#{rails_root}/app/helpers/components")
     FileUtils.mkdir_p("#{rails_root}/app/javascript/controllers/ui")
     FileUtils.mkdir_p("#{rails_root}/app/assets/stylesheets")
+    FileUtils.rm_f(Dir.glob("#{rails_root}/config/shadcn.tailwind.*"))
+    FileUtils.rm_f(Dir.glob("#{rails_root}/config/tailwind.config.*"))
     FileUtils.touch("#{rails_root}/app/assets/stylesheets/application.tailwind.css")
   end
 
@@ -54,6 +56,24 @@ RSpec.describe ShadcnUiGenerator, type: :generator do
     expect(File).to exist("#{rails_root}/config/shadcn.tailwind.js")
   end
 
+  it "copies shadcn.tailwind.ts when tailwind.config.ts is present" do
+    FileUtils.touch("#{rails_root}/config/tailwind.config.ts")
+
+    generator = described_class.new([component_name, rails_root])
+    generator.send(:preprocess_sources)
+
+    expect(File).to exist("#{rails_root}/config/shadcn.tailwind.ts")
+  end
+
+  it "copies shadcn.tailwind.mjs when tailwind.config.mjs is present" do
+    FileUtils.touch("#{rails_root}/config/tailwind.config.mjs")
+
+    generator = described_class.new([component_name, rails_root])
+    generator.send(:preprocess_sources)
+
+    expect(File).to exist("#{rails_root}/config/shadcn.tailwind.mjs")
+  end
+
   it "inserts the import line into application.tailwind.css if missing" do
     tailwind_css_path = "#{rails_root}/app/assets/stylesheets/application.tailwind.css"
 
@@ -61,5 +81,18 @@ RSpec.describe ShadcnUiGenerator, type: :generator do
     generator.send(:preprocess_sources)
 
     expect(File.read(tailwind_css_path)).to include('@import "shadcn.css";')
+  end
+
+  it "detects tailwind entrypoint under app/frontend stylesheets" do
+    FileUtils.rm_f("#{rails_root}/app/assets/stylesheets/application.tailwind.css")
+    frontend_path = "#{rails_root}/app/frontend/stylesheets/application.css"
+
+    FileUtils.mkdir_p(File.dirname(frontend_path))
+    File.write(frontend_path, "@tailwind base;\n")
+
+    generator = described_class.new([component_name, rails_root])
+    generator.send(:preprocess_sources)
+
+    expect(File.read(frontend_path)).to include('@import "shadcn.css";')
   end
 end

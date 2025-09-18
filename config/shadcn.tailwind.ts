@@ -1,6 +1,11 @@
-const defaultTheme = require("tailwindcss/defaultTheme");
+import forms from "@tailwindcss/forms";
+import aspectRatio from "@tailwindcss/aspect-ratio";
+import typography from "@tailwindcss/typography";
+import containerQueries from "@tailwindcss/container-queries";
+import defaultTheme from "tailwindcss/defaultTheme";
+import type { Config } from "tailwindcss";
 
-module.exports = {
+const config: Config = {
   darkMode: ["class"],
   content: [
     "./public/*.html",
@@ -88,10 +93,7 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require("@tailwindcss/forms"),
-    require("@tailwindcss/aspect-ratio"),
-    require("@tailwindcss/typography"),
-    require("@tailwindcss/container-queries"),
-  ],
+  plugins: [forms, aspectRatio, typography, containerQueries],
 };
+
+export default config;

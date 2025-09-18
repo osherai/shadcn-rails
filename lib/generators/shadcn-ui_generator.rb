@@ -1,4 +1,6 @@
 require "json"
+require "pathname"
+require "fileutils"
 require "rails/generators/base"
 
 class ShadcnUiGenerator < Rails::Generators::Base
@@ -44,7 +46,7 @@ class ShadcnUiGenerator < Rails::Generators::Base
     puts "Checking for shadcn import..."
     check_for_shadcn_css_import
 
-    puts "Checking for shadcn.tailwind.js..."
+    puts "Checking for shadcn.tailwind config..."
     check_for_shadcn_tailwind_js
 
     puts "Checking for component_helper.rb"
@@ -115,13 +117,12 @@ class ShadcnUiGenerator < Rails::Generators::Base
   end
 
   def check_for_tailwind
-    tailwind_file_path = File.join(target_rails_root, "app/assets/stylesheets/application.tailwind.css")
+    return true if tailwind_entrypoint_path
 
-    if File.exist?(tailwind_file_path)
-      true
-    else
-      abort "shadcn-ui requires Tailwind CSS. Please include tailwindcss-rails in your Gemfile and run `rails g tailwindcss:install` to install Tailwind CSS."
-    end
+    abort <<~MSG
+      shadcn-ui requires Tailwind CSS. Please include tailwindcss-rails in your Gemfile and run `rails tailwindcss:install` to install Tailwind CSS.
+      This generator looks for an application stylesheet that includes Tailwind directives. Supported locations include app/assets/stylesheets and app/frontend/stylesheets.
+    MSG
   end
 
   def check_for_shadcn_css
@@ -138,17 +139,15 @@ class ShadcnUiGenerator < Rails::Generators::Base
   end
 
   def check_for_shadcn_css_import
-    tailwind_file_path = File.join(target_rails_root, "app/assets/stylesheets/application.tailwind.css")
+    tailwind_file_path = tailwind_entrypoint_path
 
-    if File.file?(tailwind_file_path)
-      matched_file = File.readlines(tailwind_file_path).any? { |s| s.include?("shadcn.css") }
-      if !matched_file
-        puts "Importing shadcn.css into application.tailwind.css..."
-        insert_import_first_line(tailwind_file_path, "@import \"shadcn.css\";")
-      end
-    else
-      puts "application.tailwind.css does not exist."
-    end
+    return puts "Tailwind entrypoint not found." unless tailwind_file_path && File.file?(tailwind_file_path)
+
+    matched_file = File.readlines(tailwind_file_path).any? { |s| s.include?("shadcn.css") }
+    return if matched_file
+
+    puts "Importing shadcn.css into #{relative_tailwind_entrypoint}..."
+    insert_import_first_line(tailwind_file_path, "@import \"shadcn.css\";")
   end
 
   def insert_import_line(file_path, line)
@@ -164,21 +163,114 @@ class ShadcnUiGenerator < Rails::Generators::Base
   end
 
   def check_for_shadcn_tailwind_js
-    shadcn_tailwind_path = "config/shadcn.tailwind.js"
-    if File.exist?(File.expand_path(File.join(target_rails_root, shadcn_tailwind_path)))
-      puts "...found shadcn.tailwind.js"
-      true
-    else
-      source_path = File.expand_path(File.join("../../", shadcn_tailwind_path), __dir__)
-      destination_path = File.expand_path(File.join(target_rails_root, shadcn_tailwind_path))
-      puts "...copying shadcn.tailwind.js to config/shadcn.tailwind.js"
-      puts "Make sure to include shadcn.tailwind.js in your tailwind.config.js"
-      puts "const shadcnConfig = require('./shadcn.tailwind.js');"
-      puts "module.exports = {
-  ...shadcnConfig,
-};"
+    extension = tailwind_config_extension
+    shadcn_tailwind_path = "config/shadcn.tailwind.#{extension}"
+    destination_path = File.expand_path(File.join(target_rails_root, shadcn_tailwind_path))
 
-      FileUtils.cp(source_path, destination_path)
+    if File.exist?(destination_path)
+      puts "...found #{File.basename(shadcn_tailwind_path)}"
+      return true
+    end
+
+    source_path = locate_shadcn_tailwind_template(extension)
+
+    unless source_path && File.exist?(source_path)
+      puts "Unable to locate shadcn.tailwind template for .#{extension}; skipping copy."
+      return
+    end
+
+    FileUtils.mkdir_p(File.dirname(destination_path))
+    FileUtils.cp(source_path, destination_path)
+
+    puts "...copying #{File.basename(source_path)} to #{shadcn_tailwind_path}"
+    puts tailwind_config_integration_message(extension)
+  end
+
+  def tailwind_config_extension
+    %w[ts mjs cjs js].find do |ext|
+      File.exist?(File.expand_path(File.join(target_rails_root, "config/tailwind.config.#{ext}")))
+    end || "js"
+  end
+
+  def locate_shadcn_tailwind_template(extension)
+    preferred_filename = "config/shadcn.tailwind.#{extension}"
+    preferred_path = File.expand_path(File.join("../../", preferred_filename), __dir__)
+
+    return preferred_path if File.exist?(preferred_path)
+
+    fallback_filename = case extension
+                        when "ts"
+                          "config/shadcn.tailwind.ts"
+                        when "mjs"
+                          "config/shadcn.tailwind.mjs"
+                        when "cjs"
+                          "config/shadcn.tailwind.cjs"
+                        else
+                          "config/shadcn.tailwind.js"
+                        end
+
+    File.expand_path(File.join("../../", fallback_filename), __dir__)
+  end
+
+  def tailwind_config_integration_message(extension)
+    case extension
+    when "ts"
+      "Import and merge the config in your tailwind.config.ts using `import shadcn from './shadcn.tailwind';`."
+    when "mjs"
+      "Import the config with `import shadcnConfig from './shadcn.tailwind.mjs';` and spread it into your Tailwind config."
+    when "cjs"
+      "Require the config with `const shadcnConfig = require('./shadcn.tailwind.cjs');` and merge it into module.exports."
+    else
+      "Require the config with `const shadcnConfig = require('./shadcn.tailwind.js');` and spread it into module.exports."
+    end
+  end
+
+  def tailwind_entrypoint_path
+    return unless (relative_path = tailwind_entrypoint_relative_path)
+
+    File.expand_path(File.join(target_rails_root, relative_path))
+  end
+
+  def relative_tailwind_entrypoint
+    tailwind_entrypoint_relative_path || "application.tailwind.css"
+  end
+
+  def tailwind_entrypoint_relative_path
+    @tailwind_entrypoint_relative_path ||= begin
+      candidate = tailwind_entrypoint_candidates.find do |relative_path|
+        File.file?(File.expand_path(File.join(target_rails_root, relative_path)))
+      end
+
+      candidate || discover_tailwind_entrypoint
+    end
+  end
+
+  def tailwind_entrypoint_candidates
+    %w[
+      app/assets/stylesheets/application.tailwind.css
+      app/assets/stylesheets/application.css
+      app/assets/stylesheets/application.pcss
+      app/assets/stylesheets/application.scss
+      app/frontend/stylesheets/application.tailwind.css
+      app/frontend/stylesheets/application.css
+    ]
+  end
+
+  def discover_tailwind_entrypoint
+    search_glob = File.join(target_rails_root, "app", "{assets,frontend}", "**", "*.{css,pcss,scss}")
+
+    Dir.glob(search_glob).find do |absolute_path|
+      next unless File.file?(absolute_path)
+
+      begin
+        contents = File.read(absolute_path)
+      rescue StandardError
+        next
+      end
+
+      contents.include?("@tailwind")
+    end&.yield_self do |absolute_path|
+      Pathname.new(absolute_path).relative_path_from(Pathname.new(target_rails_root)).to_s
     end
   end
 

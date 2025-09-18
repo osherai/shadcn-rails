@@ -12,6 +12,8 @@ RSpec.describe ShadcnUiGenerator, type: :generator do
     FileUtils.mkdir_p("#{rails_root}/app/helpers/components")
     FileUtils.mkdir_p("#{rails_root}/app/javascript/controllers/ui")
     FileUtils.mkdir_p("#{rails_root}/app/assets/stylesheets")
+    FileUtils.rm_f(Dir.glob("#{rails_root}/config/shadcn.tailwind.*"))
+    FileUtils.rm_f(Dir.glob("#{rails_root}/config/tailwind.config.*"))
     FileUtils.touch("#{rails_root}/app/assets/stylesheets/application.tailwind.css")
   end
 

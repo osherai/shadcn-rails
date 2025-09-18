@@ -24,26 +24,20 @@ The components need a few things in order to render and function properly
    the `tailwindcss-rails` gem and running its installer to bootstrap your application with
    TailwindCSS.
 
-2. A few tailwindcss npm packages are required by the theme and the best way to get them is to add
-   them to your package.json or even if you're application doesn't use node packages because you use
-   importmaps or something else, having a package.json will still work only to allow the tailwind
-   cli to compile the themes. The easiest way I've found to include everything you need is by
-   including only one package that will include the rest of them, `tailwind-animate`. Create a
-   package.json if you need via `echo '{}' >> package.json`.
-
-```
-npm install -D tailwindcss-animate
-```
-
-These are the requirements if you want to add them individually:
+2. A few Tailwind CSS npm packages are required by the theme and the best way to get them is to add
+   them to your package.json. Even if your application doesn't otherwise use Node packages (for
+   example because you rely on import maps), having a lightweight `package.json` is enough for the
+   Tailwind CLI to resolve these optional plugins. Create a package.json if you need via
+   `echo '{}' >> package.json`, then add the following dependencies:
 
 ```
 @tailwindcss/forms
 @tailwindcss/aspect-ratio
 @tailwindcss/typography
 @tailwindcss/container-queries
-tailwindcss-animate
 ```
+
+Animation utilities used by the components ship with the gem, so no additional animation plugin is required when using Tailwind CSS v4.
 
 ### shadcn CSS - Required
 
@@ -53,8 +47,8 @@ These steps were not automated and are required to be done manually.
 
 The components also require a few CSS variables to be set in order to render properly. It's a two
 step process, first, the gem installation should have added `app/assets/stylesheets/shadcn.css` to
-your application. You need to make sure this is included within `application.tailwind.css`, which
-should have happened automatically, but double check.
+your application. You need to make sure this is imported by your Tailwind entrypoint (for example
+`application.tailwind.css`), which should have happened automatically, but double check.
 
 ```
 @import "shadcn.css";
@@ -63,13 +57,13 @@ should have happened automatically, but double check.
 @tailwind utilities;
 ```
 
-#### shadcn.tailwind.js
+#### shadcn.tailwind configuration
 
-The installation also should have added a `config/shadcn.tailwind.js` file to your application. This
-file is required to be included in your `tailwind.config.js` file. The best way to include it is to
-`require` it in your `tailwind.config.js` file and expand the configuration settings. This is what a
-newly setup `tailwind.config.js` file should look like after the inclusion of the
-`shadcn.tailwind.js` settings.
+The installation also should have added a `config/shadcn.tailwind.*` file to your application. The
+extension matches the Tailwind config that already exists in your project (`tailwind.config.js`,
+`tailwind.config.ts`, etc.). Make sure to import it in that config.
+
+If you are using a CommonJS config (`tailwind.config.js` / `.cjs`):
 
 ```js
 const defaultTheme = require("tailwindcss/defaultTheme");
@@ -99,13 +93,41 @@ module.exports = {
 };
 ```
 
-You could also just use the shadcnConfig as the default Tailwind settings needed are also defined
-there..
+For an ESM or TypeScript config (`tailwind.config.mjs` / `.ts`):
 
-```js
-const shadcnConfig = require("./shadcn.tailwind.js");
+```ts
+import forms from "@tailwindcss/forms";
+import aspectRatio from "@tailwindcss/aspect-ratio";
+import typography from "@tailwindcss/typography";
+import containerQueries from "@tailwindcss/container-queries";
+import defaultTheme from "tailwindcss/defaultTheme";
+import shadcnConfig from "./shadcn.tailwind";
 
-module.exports = {
+export default {
+  content: [
+    "./public/*.html",
+    "./app/helpers/**/*.rb",
+    "./app/javascript/**/*.js",
+    "./app/views/**/*.{erb,haml,html,slim}",
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ["Inter var", ...defaultTheme.fontFamily.sans],
+      },
+    },
+  },
+  plugins: [forms, aspectRatio, typography, containerQueries],
+  ...shadcnConfig,
+};
+```
+
+You can also export the shadcn config directly if you do not need further customization:
+
+```ts
+import shadcnConfig from "./shadcn.tailwind";
+
+export default {
   ...shadcnConfig,
 };
 ```
@@ -247,14 +269,13 @@ module.exports = {
     require("@tailwindcss/aspect-ratio"),
     require("@tailwindcss/typography"),
     require("@tailwindcss/container-queries"),
-    require("tailwindcss-animate"),
   ],
 };
 ```
 
 ### Configure styles
 
-Add the following to your app/assets/stylesheets/application.tailwind.css file.
+Add the following to your Tailwind entrypoint (for example `app/assets/stylesheets/application.tailwind.css` or `app/frontend/stylesheets/application.css`).
 
 ```css
 @tailwind base;
